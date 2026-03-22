@@ -14,7 +14,7 @@ Documents → Chunking → Embeddings → FAISS Index → Retrieval → Groq LLM
 
 1. **Load** — Upload `.txt`, `.md`, `.pdf`, or `.docx` files
 2. **Chunk** — Split into overlapping sentence-boundary segments
-3. **Embed** — `all-MiniLM-L6-v2` converts each chunk to a 384-dim vector
+3. **Embed** — `paraphrase-MiniLM-L3-v2` converts each chunk to a 384-dim vector
 4. **Index** — FAISS stores vectors for millisecond cosine similarity search
 5. **Retrieve** — Top-K most relevant chunks fetched for any query
 6. **Generate** — Groq streams a grounded answer token by token
@@ -104,22 +104,51 @@ Open `http://localhost:5000`
 
 ---
 
-## Deploy to Vercel
+## Deploy to Render
 
-> **Note:** Vercel is designed for frontend/serverless apps. For a full Python Flask backend, use **Railway**, **Render**, or **Fly.io** instead (all have free tiers). The `vercel.json` included here uses Vercel's Python serverless runtime.
+1. Push your code to GitHub
+2. Go to **render.com** → New → Web Service → connect your repo
+3. Set the following:
 
-```bash
-npm install -g vercel
-vercel login
-vercel --prod
+| Setting | Value |
+|---------|-------|
+| **Build Command** | `pip install -r requirements.txt` |
+| **Start Command** | `python server.py` |
+| **Instance Type** | Free |
+
+4. Add environment variable: `GROQ_API_KEY = gsk_...`
+5. Click **Deploy**
+
+You'll get a public URL like `https://rag-system.onrender.com`
+
+> **Note:** The free tier sleeps after 15 minutes of inactivity. First load after idle takes ~30 seconds to wake up.
+
+---
+
+## Changing the embedding model
+
+The default model is `paraphrase-MiniLM-L3-v2` — lightweight (22MB), optimized for deployment on free-tier servers with limited RAM.
+
+If you are running locally and want better accuracy, you can swap it for a heavier model in `server.py`:
+
+```python
+rag = RAGPipeline(
+    model_name="all-MiniLM-L6-v2",   # 90MB — better quality, needs ~1GB RAM
+    chunk_size=512,
+    chunk_overlap=64,
+)
 ```
 
-When prompted, add your environment variable:
-```
-GROQ_API_KEY = gsk_...
-```
+Available models ranked by size vs quality tradeoff:
 
-Or set it in the Vercel dashboard: **Project → Settings → Environment Variables**
+| Model | Size | RAM needed | Quality |
+|-------|------|-----------|---------|
+| `paraphrase-MiniLM-L3-v2` | 22MB | ~512MB | Good — default for deployment |
+| `all-MiniLM-L6-v2` | 90MB | ~1GB | Better — recommended for local use |
+| `all-MiniLM-L12-v2` | 120MB | ~1.5GB | Best of the MiniLM family |
+| `all-mpnet-base-v2` | 420MB | ~2GB | Excellent — best quality |
+
+> **Note:** if you switch models after already ingesting documents, delete the `rag_store/` folder and re-ingest. The stored vectors won't match the new model's dimensions.
 
 ---
 

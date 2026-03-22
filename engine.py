@@ -132,7 +132,7 @@ def chunk_document(doc: Document, chunk_size: int = 512, chunk_overlap: int = 64
 #  Embeddings 
 
 class EmbeddingModel:
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "paraphrase-MiniLM-L3-v2"):
         print(f"[EMB] Loading: {model_name}")
         self.model = SentenceTransformer(model_name)
         self.dim   = self.model.get_sentence_embedding_dimension()
@@ -202,7 +202,7 @@ SYSTEM_PROMPT = (
 class RAGPipeline:
     def __init__(
         self,
-        model_name: str    = "all-MiniLM-L6-v2",
+        model_name: str    = "paraphrase-MiniLM-L3-v2",
         chunk_size: int    = 512,
         chunk_overlap: int = 64,
     ):

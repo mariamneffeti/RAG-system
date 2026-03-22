@@ -30,7 +30,7 @@ CORS(app)
 
 #single global pipeline instance(swap for per_user sessions in prod)
 rag = RAGPipeline(
-    model_name="all-MiniLM-L6-v2",
+    model_name="paraphrase-MiniLM-L3-v2",
     chunk_size=512,
     chunk_overlap=64,
 )
