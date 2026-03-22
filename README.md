@@ -1,8 +1,8 @@
 ---
 title: Rag System
 emoji: 🔍
-colorFrom: orange
-colorTo: red
+colorFrom: red
+colorTo: indigo
 sdk: docker
 app_port: 5000
 pinned: false
