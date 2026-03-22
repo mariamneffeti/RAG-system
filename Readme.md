@@ -1,3 +1,13 @@
+---
+title: Rag System
+emoji: 🔍
+colorFrom: orange
+colorTo: red
+sdk: docker
+app_port: 5000
+pinned: false
+---
+
 # RAG System
 
 A full-stack Retrieval-Augmented Generation system. Upload documents, ask questions, get grounded answers powered by semantic search and Groq's free LLM API — streamed in real time.
