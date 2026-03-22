@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RAG System</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0c0c0c; --surface: #111; --surface2: #181818; --border: #222;
+    --orange: #f04f00; --orange2: #ff6b1a;
+    --white: #f0ede8; --muted: #555; --muted2: #333; --text: #d8d4ce;
+    --D: 'Bebas Neue', sans-serif; --B: 'DM Sans', sans-serif; --M: 'DM Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--B); overflow-x: hidden; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 60px; height: 68px;
+    background: rgba(12,12,12,0.85); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { font-family: var(--D); font-size: 28px; letter-spacing: 2px; color: var(--white); }
+  .nav-logo span { color: var(--orange); }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    font-family: var(--M); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted); text-decoration: none; transition: color .15s;
+  }
+  .nav-links a:hover { color: var(--white); }
+  .nav-cta {
+    background: var(--orange); color: #fff; padding: 10px 22px; border-radius: 3px;
+    font-family: var(--M); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    text-decoration: none; transition: all .15s;
+  }
+  .nav-cta:hover { background: var(--orange2); box-shadow: 0 6px 20px rgba(240,79,0,.3); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh; display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 60px 80px; position: relative; overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 600px 400px at 80% 50%, rgba(240,79,0,0.07), transparent),
+      radial-gradient(ellipse 400px 600px at 10% 80%, rgba(240,79,0,0.04), transparent);
+  }
+  .hero-grid {
+    position: absolute; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .hero-eyebrow {
+    font-family: var(--M); font-size: 10px; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--orange); margin-bottom: 20px; position: relative; z-index: 1;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .hero-eyebrow::before { content: ''; width: 30px; height: 1px; background: var(--orange); }
+  .hero-title {
+    font-family: var(--D); font-size: clamp(80px, 12vw, 160px);
+    line-height: .92; letter-spacing: 2px; color: var(--white);
+    position: relative; z-index: 1; margin-bottom: 32px;
+  }
+  .hero-title .line2 { color: var(--orange); }
+  .hero-title .line3 { -webkit-text-stroke: 1px rgba(240,200,150,0.3); color: transparent; }
+  .hero-bottom {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    position: relative; z-index: 1;
+  }
+  .hero-desc { font-size: 15px; color: var(--muted); max-width: 400px; line-height: 1.85; }
+  .hero-desc strong { color: var(--text); font-weight: 500; }
+  .hero-actions { display: flex; gap: 12px; align-items: center; }
+  .btn-hero-primary {
+    background: var(--orange); color: #fff; padding: 16px 36px; border-radius: 3px;
+    font-family: var(--B); font-weight: 600; font-size: 13px; letter-spacing: 1px;
+    text-transform: uppercase; text-decoration: none; transition: all .2s;
+  }
+  .btn-hero-primary:hover { background: var(--orange2); transform: translateY(-2px); box-shadow: 0 12px 32px rgba(240,79,0,.35); }
+  .btn-hero-ghost {
+    border: 1px solid var(--border); color: var(--muted); padding: 16px 32px; border-radius: 3px;
+    font-family: var(--M); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    text-decoration: none; transition: all .15s;
+  }
+  .btn-hero-ghost:hover { border-color: var(--muted); color: var(--white); }
+
+  /* STATS STRIP */
+  .stats-strip {
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    display: grid; grid-template-columns: repeat(3, 1fr);
+  }
+  .strip-stat {
+    padding: 48px 60px; border-right: 1px solid var(--border);
+    position: relative; overflow: hidden; transition: background .2s;
+  }
+  .strip-stat:last-child { border-right: none; }
+  .strip-stat:hover { background: rgba(240,79,0,0.04); }
+  .strip-stat::after {
+    content: ''; position: absolute; bottom: 0; left: 60px; right: 60px; height: 2px;
+    background: var(--orange); transform: scaleX(0); transform-origin: left; transition: transform .3s;
+  }
+  .strip-stat:hover::after { transform: scaleX(1); }
+  .strip-num { font-family: var(--D); font-size: 72px; line-height: 1; color: var(--white); }
+  .strip-num span { color: var(--orange); }
+  .strip-lbl { font-family: var(--M); font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+  .strip-desc { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.6; max-width: 240px; }
+
+  /* HOW IT WORKS */
+  .section { padding: 120px 60px; }
+  .section-eyebrow {
+    font-family: var(--M); font-size: 10px; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--orange); margin-bottom: 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .section-eyebrow::before { content: ''; width: 30px; height: 1px; background: var(--orange); }
+  .section-title { font-family: var(--D); font-size: clamp(42px, 6vw, 80px); line-height: .95; color: var(--white); margin-bottom: 60px; }
+  .section-title span { color: var(--orange); }
+
+  .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; }
+  .step {
+    padding: 40px 32px; border-right: 1px solid var(--border);
+    position: relative; transition: background .2s;
+  }
+  .step:last-child { border-right: none; }
+  .step:hover { background: rgba(255,255,255,0.02); }
+  .step-num {
+    font-family: var(--D); font-size: 56px; color: var(--muted2); line-height: 1;
+    margin-bottom: 20px;
+  }
+  .step:hover .step-num { color: var(--orange); }
+  .step-icon { font-size: 28px; margin-bottom: 14px; }
+  .step-name { font-family: var(--D); font-size: 22px; letter-spacing: 1px; color: var(--white); margin-bottom: 10px; }
+  .step-desc { font-size: 12px; color: var(--muted); line-height: 1.75; }
+  .step-connector {
+    position: absolute; top: 60px; right: -1px; width: 1px; height: 40px;
+    background: linear-gradient(var(--border), var(--orange));
+  }
+  .step:last-child .step-connector { display: none; }
+
+  /* FEATURES */
+  .features { padding: 0 60px 120px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+  .feature-card {
+    background: var(--bg); padding: 48px; transition: background .2s;
+    position: relative; overflow: hidden;
+  }
+  .feature-card:hover { background: rgba(240,79,0,0.03); }
+  .feature-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--orange); transform: scaleX(0); transform-origin: left; transition: transform .3s;
+  }
+  .feature-card:hover::before { transform: scaleX(1); }
+  .feature-icon { font-size: 32px; margin-bottom: 20px; }
+  .feature-name { font-family: var(--D); font-size: 28px; letter-spacing: 1px; color: var(--white); margin-bottom: 12px; }
+  .feature-desc { font-size: 13px; color: var(--muted); line-height: 1.8; }
+  .feature-tag {
+    display: inline-block; margin-top: 16px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 2px;
+    font-family: var(--M); font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted); padding: 4px 10px;
+  }
+
+  /* CTA */
+  .cta-section {
+    padding: 120px 60px; text-align: center;
+    background: linear-gradient(180deg, transparent, rgba(240,79,0,0.04), transparent);
+    border-top: 1px solid var(--border);
+  }
+  .cta-title { font-family: var(--D); font-size: clamp(48px, 7vw, 100px); color: var(--white); line-height: .95; margin-bottom: 24px; }
+  .cta-title span { color: var(--orange); }
+  .cta-desc { font-size: 15px; color: var(--muted); max-width: 460px; margin: 0 auto 40px; line-height: 1.8; }
+  .cta-btns { display: flex; gap: 12px; justify-content: center; }
+
+  /* FOOTER */
+  footer {
+    padding: 32px 60px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer-logo { font-family: var(--D); font-size: 22px; color: var(--muted2); letter-spacing: 2px; }
+  .footer-logo span { color: var(--orange); }
+  .footer-note { font-family: var(--M); font-size: 9px; letter-spacing: 2px; color: var(--muted2); text-transform: uppercase; }
+
+  /* Grain */
+  body::after {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9999; opacity: .35;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  }
+
+  /* Animations */
+  .fade-up { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
+  .fade-up.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">RAG<span>.</span></div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/ingest">Ingest</a>
+    <a href="/query">Query</a>
+    <a href="/query" class="nav-cta">Launch App →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-eyebrow">Retrieval-Augmented Generation</div>
+  <div class="hero-title">
+    <div>ASK YOUR</div>
+    <div class="line2">DOCUMENTS.</div>
+    <div class="line3">GET ANSWERS.</div>
+  </div>
+  <div class="hero-bottom">
+    <p class="hero-desc">
+      Upload any document. Ask anything. Get <strong>grounded, accurate answers</strong>
+      powered by semantic search and streaming AI — not hallucinations.
+    </p>
+    <div class="hero-actions">
+      <a href="/ingest" class="btn-hero-primary">Start Ingesting →</a>
+      <a href="/query" class="btn-hero-ghost">Open Query UI</a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS STRIP -->
+<div class="stats-strip">
+  <div class="strip-stat fade-up">
+    <div class="strip-num">384<span>D</span></div>
+    <div class="strip-lbl">Embedding Dimensions</div>
+    <div class="strip-desc">all-MiniLM-L6-v2 produces dense 384-dim vectors balancing speed and semantic quality.</div>
+  </div>
+  <div class="strip-stat fade-up" style="transition-delay:.1s">
+    <div class="strip-num">5<span>+</span></div>
+    <div class="strip-lbl">File Formats Supported</div>
+    <div class="strip-desc">.txt, .md, .pdf, .docx — load entire directories in one call.</div>
+  </div>
+  <div class="strip-stat fade-up" style="transition-delay:.2s">
+    <div class="strip-num">0<span>ms</span></div>
+    <div class="strip-lbl">Hallucination Tolerance</div>
+    <div class="strip-desc">Every answer is grounded strictly in your documents. Context-only generation.</div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="section-eyebrow">How it works</div>
+  <div class="section-title">5-STEP<br/><span>PIPELINE</span></div>
+  <div class="steps">
+    <div class="step fade-up">
+      <div class="step-num">01</div>
+      <div class="step-icon">📄</div>
+      <div class="step-name">Load</div>
+      <div class="step-desc">Parse .txt, .md, .pdf, .docx files or paste raw text directly into the system.</div>
+      <div class="step-connector"></div>
+    </div>
+    <div class="step fade-up" style="transition-delay:.08s">
+      <div class="step-num">02</div>
+      <div class="step-icon">✂️</div>
+      <div class="step-name">Chunk</div>
+      <div class="step-desc">Split documents into overlapping sentence-boundary segments for optimal retrieval.</div>
+      <div class="step-connector"></div>
+    </div>
+    <div class="step fade-up" style="transition-delay:.16s">
+      <div class="step-num">03</div>
+      <div class="step-icon">🔢</div>
+      <div class="step-name">Embed</div>
+      <div class="step-desc">Sentence Transformers convert each chunk into a 384-dimensional dense vector.</div>
+      <div class="step-connector"></div>
+    </div>
+    <div class="step fade-up" style="transition-delay:.24s">
+      <div class="step-num">04</div>
+      <div class="step-icon">🗄️</div>
+      <div class="step-name">Index</div>
+      <div class="step-desc">FAISS stores vectors for millisecond cosine similarity search at scale.</div>
+      <div class="step-connector"></div>
+    </div>
+    <div class="step fade-up" style="transition-delay:.32s">
+      <div class="step-num">05</div>
+      <div class="step-icon">⚡</div>
+      <div class="step-name">Generate</div>
+      <div class="step-desc">Top-K chunks feed Claude as context. Answers stream back token by token.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<div style="padding: 0 60px;">
+  <div class="section-eyebrow fade-up" style="margin-bottom: 32px;">What's included</div>
+</div>
+<div class="features fade-up">
+  <div class="feature-card">
+    <div class="feature-icon">🔍</div>
+    <div class="feature-name">FAISS Vector Search</div>
+    <div class="feature-desc">Facebook AI Similarity Search with inner-product indexing over normalized embeddings. Supports billion-scale indices.</div>
+    <span class="feature-tag">faiss-cpu</span>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🧠</div>
+    <div class="feature-name">Sentence Transformers</div>
+    <div class="feature-desc">all-MiniLM-L6-v2 encodes text into semantically meaningful dense vectors. Fast, lightweight, production-ready.</div>
+    <span class="feature-tag">sentence-transformers</span>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">⚡</div>
+    <div class="feature-name">SSE Streaming</div>
+    <div class="feature-desc">Server-Sent Events stream Claude's response token-by-token. No waiting, no polling — real-time output.</div>
+    <span class="feature-tag">flask + anthropic</span>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">💾</div>
+    <div class="feature-name">Persistent Index</div>
+    <div class="feature-desc">Save and reload your FAISS index and chunk store to disk. Ingest once, query forever without re-embedding.</div>
+    <span class="feature-tag">pickle + faiss IO</span>
+  </div>
+</div>
+
+<!-- CTA -->
+<section class="cta-section fade-up">
+  <div class="cta-title">START<br/><span>BUILDING.</span></div>
+  <p class="cta-desc">Ingest your first document in under 60 seconds. No configuration required.</p>
+  <div class="cta-btns">
+    <a href="/ingest" class="btn-hero-primary">Ingest Documents →</a>
+    <a href="/query" class="btn-hero-ghost">Go to Query UI</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">RAG<span>.</span></div>
+  <div class="footer-note">Retrieval-Augmented Generation System</div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

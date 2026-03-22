@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  rag:
+    build: .
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env                      # reads GROQ_API_KEY from your .env file
+    volumes:
+      - rag_store:/app/rag_store  # persists the vector index between restarts
+    restart: unless-stopped
+
+volumes:
+  rag_store:

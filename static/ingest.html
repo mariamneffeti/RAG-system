@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ingest — RAG System</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0c0c0c; --surface: #111; --surface2: #181818; --surface3: #1f1f1f; --border: #222;
+    --orange: #f04f00; --orange2: #ff6b1a;
+    --white: #f0ede8; --muted: #555; --muted2: #333; --text: #d8d4ce;
+    --D: 'Bebas Neue', sans-serif; --B: 'DM Sans', sans-serif; --M: 'DM Mono', monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--B); min-height: 100vh; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 60px; height: 68px;
+    background: rgba(12,12,12,0.9); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo { font-family: var(--D); font-size: 28px; letter-spacing: 2px; color: var(--white); text-decoration: none; }
+  .nav-logo span { color: var(--orange); }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    font-family: var(--M); font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--muted); text-decoration: none; transition: color .15s;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--white); }
+  .nav-links a.active { color: var(--orange); }
+  .nav-cta {
+    background: var(--orange); color: #fff !important; padding: 10px 22px; border-radius: 3px;
+    font-family: var(--M); font-size: 10px; letter-spacing: 2px;
+  }
+  .nav-cta:hover { background: var(--orange2) !important; }
+
+  /* PAGE HEADER */
+  .page-header {
+    padding: 140px 60px 60px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-end; justify-content: space-between;
+  }
+  .page-header-left {}
+  .page-eyebrow {
+    font-family: var(--M); font-size: 10px; letter-spacing: 4px; text-transform: uppercase;
+    color: var(--orange); margin-bottom: 12px; display: flex; align-items: center; gap: 12px;
+  }
+  .page-eyebrow::before { content: ''; width: 30px; height: 1px; background: var(--orange); }
+  .page-title { font-family: var(--D); font-size: clamp(52px, 8vw, 100px); line-height: .9; color: var(--white); }
+  .page-title span { color: var(--orange); }
+  .page-desc { font-size: 14px; color: var(--muted); max-width: 340px; line-height: 1.8; text-align: right; }
+
+  /* MAIN LAYOUT */
+  .main { display: grid; grid-template-columns: 1fr 380px; min-height: calc(100vh - 68px); }
+
+  /* LEFT — forms */
+  .forms-area { padding: 60px; border-right: 1px solid var(--border); }
+
+  .form-block { margin-bottom: 60px; }
+  .form-block-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .form-block-num { font-family: var(--D); font-size: 48px; color: var(--muted2); line-height: 1; }
+  .form-block-title { font-family: var(--D); font-size: 28px; letter-spacing: 1px; color: var(--white); }
+  .form-block-sub { font-family: var(--M); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+  .field { margin-bottom: 20px; }
+  .field-label { font-family: var(--M); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px; }
+  input[type=text], textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 12px 16px; color: var(--white);
+    font-family: var(--M); font-size: 12px; resize: vertical; outline: none; transition: border-color .15s;
+  }
+  input[type=text]:focus, textarea:focus { border-color: var(--orange); }
+  textarea { min-height: 160px; line-height: 1.7; }
+  ::placeholder { color: var(--muted2); }
+
+  .dropzone {
+    border: 1px dashed var(--border); border-radius: 4px;
+    padding: 60px 40px; text-align: center; cursor: pointer;
+    background: var(--surface2); transition: all .25s; position: relative;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: var(--orange); background: rgba(240,79,0,0.04); }
+  .dropzone input[type=file] { display: none; }
+  .drop-icon { font-size: 48px; margin-bottom: 16px; opacity: .7; }
+  .drop-title { font-family: var(--D); font-size: 24px; letter-spacing: 1px; color: var(--white); margin-bottom: 8px; }
+  .drop-sub { font-family: var(--M); font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .drop-formats { display: flex; gap: 8px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+  .drop-fmt {
+    background: var(--surface3); border: 1px solid var(--border); border-radius: 2px;
+    font-family: var(--M); font-size: 9px; letter-spacing: 2px; color: var(--muted);
+    padding: 4px 10px; text-transform: uppercase;
+  }
+
+  .btn-submit {
+    background: var(--orange); color: #fff; border: none; border-radius: 4px;
+    padding: 14px 32px; font-family: var(--B); font-weight: 600; font-size: 13px;
+    letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .btn-submit:hover { background: var(--orange2); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(240,79,0,.3); }
+  .btn-submit:active { transform: translateY(0); }
+  .btn-submit:disabled { background: var(--muted2); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .loading-bar { height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; margin-top: 12px; display: none; }
+  .loading-bar.active { display: block; }
+  .loading-bar::after {
+    content: ''; display: block; height: 100%; width: 35%; background: var(--orange);
+    animation: load 1.1s ease infinite;
+  }
+  @keyframes load { 0%{margin-left:-35%} 100%{margin-left:100%} }
+
+  /* RIGHT — sidebar */
+  .sidebar { background: var(--surface); padding: 60px 40px; }
+  .sidebar-section { margin-bottom: 48px; }
+  .sb-title { font-family: var(--D); font-size: 22px; letter-spacing: 1px; color: var(--white); margin-bottom: 20px; }
+  .sb-label { font-family: var(--M); font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .sb-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* Stats */
+  .stat-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row-label { font-family: var(--M); font-size: 10px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
+  .stat-row-val { font-family: var(--D); font-size: 28px; color: var(--orange); line-height: 1; }
+
+  /* Settings */
+  .setting { margin-bottom: 16px; }
+  .setting label { font-family: var(--M); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+  .setting input[type=text] { padding: 8px 12px; font-size: 11px; }
+  .setting-range { display: flex; align-items: center; gap: 12px; }
+  .setting-range input[type=range] { flex: 1; accent-color: var(--orange); }
+  .range-val { font-family: var(--D); font-size: 22px; color: var(--orange); min-width: 24px; }
+
+  /* Log */
+  .log-area {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+    padding: 16px; font-family: var(--M); font-size: 10px; color: var(--muted);
+    max-height: 200px; overflow-y: auto; letter-spacing: .5px; line-height: 1.8;
+  }
+  .log-entry { margin-bottom: 4px; }
+  .log-entry.ok { color: #4caf50; }
+  .log-entry.err { color: #e53935; }
+  .log-entry.info { color: var(--orange); }
+
+  .btn-clear { background: none; border: 1px solid var(--border); color: var(--muted); padding: 10px 20px; border-radius: 3px; font-family: var(--M); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all .15s; width: 100%; margin-top: 12px; }
+  .btn-clear:hover { border-color: #e53935; color: #e53935; }
+
+  .next-link {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--orange); color: #fff; padding: 16px 20px; border-radius: 4px;
+    text-decoration: none; margin-top: 24px; transition: background .15s;
+  }
+  .next-link:hover { background: var(--orange2); }
+  .next-link-label { font-family: var(--M); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; opacity: .7; }
+  .next-link-title { font-family: var(--D); font-size: 22px; letter-spacing: 1px; }
+  .next-link-arrow { font-size: 22px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 12px 22px;
+    font-family: var(--M); font-size: 11px; letter-spacing: 1px;
+    transition: transform .35s cubic-bezier(.34,1.56,.64,1); z-index: 10000;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: #4caf50; color: #4caf50; }
+  .toast.error { border-color: #e53935; color: #e53935; }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--muted2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">RAG<span>.</span></a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/ingest" class="active">Ingest</a>
+    <a href="/query">Query</a>
+    <a href="/query" class="nav-cta">Query UI →</a>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="page-header-left">
+    <div class="page-eyebrow">Step 01</div>
+    <div class="page-title">INGEST<br/><span>DOCS</span></div>
+  </div>
+  <p class="page-desc">Load your documents into the vector index. Supports paste, file upload, or entire directories via the API.</p>
+</div>
+
+<div class="main">
+
+  <!-- FORMS -->
+  <div class="forms-area">
+
+    <!-- Text ingest -->
+    <div class="form-block">
+      <div class="form-block-header">
+        <div class="form-block-num">01</div>
+        <div>
+          <div class="form-block-title">Paste Text</div>
+          <div class="form-block-sub">Raw text or markdown content</div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Source name</label>
+        <input type="text" id="text-source" value="document.txt" placeholder="my-document.txt" />
+      </div>
+      <div class="field">
+        <label class="field-label">Content</label>
+        <textarea id="text-content" placeholder="Paste your document content here. Markdown, plain text, articles, research papers — anything."></textarea>
+      </div>
+      <button class="btn-submit" onclick="ingestText()" id="text-btn">
+        <span>→</span> Ingest Text
+      </button>
+      <div class="loading-bar" id="text-loading"></div>
+    </div>
+
+    <!-- File upload -->
+    <div class="form-block">
+      <div class="form-block-header">
+        <div class="form-block-num">02</div>
+        <div>
+          <div class="form-block-title">Upload File</div>
+          <div class="form-block-sub">.txt · .md · .pdf · .docx</div>
+        </div>
+      </div>
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+        <input type="file" id="file-input" accept=".txt,.md,.pdf,.docx" onchange="ingestFile(this)" />
+        <div class="drop-icon">📂</div>
+        <div class="drop-title">Drop file here</div>
+        <div class="drop-sub">or click to browse</div>
+        <div class="drop-formats">
+          <span class="drop-fmt">.txt</span>
+          <span class="drop-fmt">.md</span>
+          <span class="drop-fmt">.pdf</span>
+          <span class="drop-fmt">.docx</span>
+        </div>
+      </div>
+      <div class="loading-bar" id="file-loading"></div>
+    </div>
+
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="sidebar-section">
+      <div class="sb-title">Index Stats</div>
+      <div class="sb-label">Current state</div>
+      <div class="stat-row"><span class="stat-row-label">Documents</span><span class="stat-row-val" id="stat-docs">0</span></div>
+      <div class="stat-row"><span class="stat-row-label">Chunks</span><span class="stat-row-val" id="stat-chunks">0</span></div>
+      <div class="stat-row"><span class="stat-row-label">Status</span><span class="stat-row-val" id="stat-status" style="font-size:16px;color:var(--muted)">—</span></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sb-title">Connection</div>
+      <div class="sb-label">Server settings</div>
+      <div class="setting">
+        <label>Server URL</label>
+        <input type="text" id="server-url" value="http://localhost:5000" />
+      </div>
+      <button class="btn-clear" onclick="checkHealth()" style="color:var(--orange);border-color:var(--orange);margin-top:8px">⟳ &nbsp;Check Connection</button>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sb-title">Activity Log</div>
+      <div class="sb-label">Recent events</div>
+      <div class="log-area" id="log-area">
+        <div class="log-entry info">// system ready</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sb-label">Danger zone</div>
+      <button class="btn-clear" onclick="clearIndex()">✕ &nbsp;Clear Index</button>
+    </div>
+
+    <a href="/query" class="next-link">
+      <div>
+        <div class="next-link-label">Next step</div>
+        <div class="next-link-title">Query UI</div>
+      </div>
+      <div class="next-link-arrow">→</div>
+    </a>
+
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = () => document.getElementById('server-url').value.replace(/\/$/, '');
+
+function log(msg, type='') {
+  const area = document.getElementById('log-area');
+  const d = document.createElement('div');
+  d.className = `log-entry ${type}`;
+  const t = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  d.textContent = `[${t}] ${msg}`;
+  area.appendChild(d); area.scrollTop = area.scrollHeight;
+}
+
+async function checkHealth() {
+  try {
+    const res  = await fetch(`${API()}/stats`);
+    const data = await res.json();
+    updateStats(data);
+    document.getElementById('stat-status').textContent = 'Online';
+    document.getElementById('stat-status').style.color = '#4caf50';
+    log('connected to server', 'ok');
+  } catch {
+    document.getElementById('stat-status').textContent = 'Offline';
+    document.getElementById('stat-status').style.color = '#e53935';
+    log('server unreachable', 'err');
+  }
+}
+
+function updateStats(data) {
+  document.getElementById('stat-docs').textContent   = data.documents ?? 0;
+  document.getElementById('stat-chunks').textContent = data.chunks    ?? 0;
+}
+
+async function ingestText() {
+  const text   = document.getElementById('text-content').value.trim();
+  const source = document.getElementById('text-source').value.trim() || 'inline';
+  if (!text) return toast('Please enter some content', 'error');
+  const btn = document.getElementById('text-btn');
+  const bar = document.getElementById('text-loading');
+  btn.disabled = true; bar.classList.add('active');
+  log(`ingesting "${source}"...`, 'info');
+  try {
+    const res  = await fetch(`${API()}/ingest/text`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text, source })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    updateStats(data.stats);
+    document.getElementById('text-content').value = '';
+    log(`✓ ingested "${source}" — ${data.stats.chunks} total chunks`, 'ok');
+    toast(`✓ Done — ${data.stats.chunks} chunks indexed`, 'success');
+  } catch(e) {
+    log(`✗ ${e.message}`, 'err');
+    toast(`Error: ${e.message}`, 'error');
+  } finally { btn.disabled = false; bar.classList.remove('active'); }
+}
+
+async function ingestFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const bar = document.getElementById('file-loading');
+  bar.classList.add('active');
+  log(`uploading "${file.name}"...`, 'info');
+  const fd = new FormData(); fd.append('file', file);
+  try {
+    const res  = await fetch(`${API()}/ingest/file`, { method:'POST', body:fd });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    updateStats(data.stats);
+    log(`✓ ingested "${file.name}" — ${data.stats.chunks} total chunks`, 'ok');
+    toast(`✓ "${file.name}" indexed`, 'success');
+  } catch(e) {
+    log(`✗ ${e.message}`, 'err');
+    toast(`Error: ${e.message}`, 'error');
+  } finally { bar.classList.remove('active'); input.value=''; }
+}
+
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    const fi = document.getElementById('file-input');
+    const dt = new DataTransfer(); dt.items.add(file);
+    fi.files = dt.files; ingestFile(fi);
+  }
+});
+
+async function clearIndex() {
+  if (!confirm('This will delete all indexed documents. Continue?')) return;
+  try {
+    await fetch(`${API()}/clear`, { method:'POST' });
+    updateStats({ documents:0, chunks:0 });
+    log('index cleared', 'info');
+    toast('Index cleared', 'success');
+  } catch(e) { toast(`Error: ${e.message}`, 'error'); }
+}
+
+let toastTimer;
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+checkHealth();
+</script>
+</body>
+</html>
