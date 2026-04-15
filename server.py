@@ -155,9 +155,7 @@ if __name__ == "__main__" :
     if Path(f"{STORE_PATH}/index.faiss").exists() :
         print("[SERVER] LOADING PERSISTED VECTOR STORE...")
         rag.load(STORE_PATH)
-    print("[SERVER] Starting on http://localhost:5000")
-    app.run(debug=True, port=5000, threaded=True)
-    key_set = bool(os.environ.get("GROQ_API_KEY"))
-    print(f"[SERVER] Groq key : {'set ✓' if key_set else 'NOT SET — paste it in the UI Settings panel'}")
-    print(f"[SERVER] Open     : http://localhost:5000")
-    app.run(debug=True, port=5000, threaded=True)
+    port = int(os.environ.get("PORT", 7860)) 
+    
+    print(f"[SERVER] Starting on http://0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
